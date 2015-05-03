@@ -35,10 +35,10 @@
 #include "atomic.h"
 #include "cxxabi.h"
 
-#pragma weak pthread_key_create
-#pragma weak pthread_setspecific
-#pragma weak pthread_getspecific
-#pragma weak pthread_once
+//#pragma weak pthread_key_create
+//#pragma weak pthread_setspecific
+//#pragma weak pthread_getspecific
+//#pragma weak pthread_once
 #ifdef LIBCXXRT_WEAK_LOCKS
 #pragma weak pthread_mutex_lock
 #define pthread_mutex_lock(mtx) do {\
@@ -257,6 +257,7 @@ static const uint32_t abi_exception_class =
 
 static bool isCXXException(uint64_t cls)
 {
+	(void) abi_exception_class;
 	return (cls == exception_class) || (cls == dependent_exception_class);
 }
 
@@ -294,7 +295,7 @@ static terminate_handler terminateHandler = abort;
 static unexpected_handler unexpectedHandler = std::terminate;
 
 /** Key used for thread-local data. */
-static pthread_key_t eh_key;
+//static pthread_key_t eh_key;
 
 
 /**
@@ -354,7 +355,7 @@ static void thread_cleanup(void* thread_info)
 /**
  * Once control used to protect the key creation.
  */
-static pthread_once_t once_control = PTHREAD_ONCE_INIT;
+//static pthread_once_t once_control = PTHREAD_ONCE_INIT;
 
 /**
  * We may not be linked against a full pthread implementation.  If we're not,
@@ -371,17 +372,18 @@ static __cxa_thread_info singleThreadInfo;
  */
 static void init_key(void)
 {
-	if ((0 == pthread_key_create) ||
-	    (0 == pthread_setspecific) ||
-	    (0 == pthread_getspecific))
-	{
+	//if ((0 == pthread_key_create) ||
+	    //(0 == pthread_setspecific) ||
+	    //(0 == pthread_getspecific))
+	//{
 		fakeTLS = true;
 		return;
-	}
-	pthread_key_create(&eh_key, thread_cleanup);
-	pthread_setspecific(eh_key, reinterpret_cast<void *>(0x42));
-	fakeTLS = (pthread_getspecific(eh_key) != reinterpret_cast<void *>(0x42));
-	pthread_setspecific(eh_key, 0);
+	//}
+	(void) thread_cleanup;
+	//pthread_key_create(&eh_key, thread_cleanup);
+	//pthread_setspecific(eh_key, reinterpret_cast<void *>(0x42));
+	//fakeTLS = (pthread_getspecific(eh_key) != reinterpret_cast<void *>(0x42));
+	//pthread_setspecific(eh_key, 0);
 }
 
 /**
@@ -389,18 +391,19 @@ static void init_key(void)
  */
 static __cxa_thread_info *thread_info()
 {
-	if ((0 == pthread_once) || pthread_once(&once_control, init_key))
-	{
+	(void) init_key;
+	//if ((0 == pthread_once) || pthread_once(&once_control, init_key))
+	//{
 		fakeTLS = true;
-	}
-	if (fakeTLS) { return &singleThreadInfo; }
-	__cxa_thread_info *info = static_cast<__cxa_thread_info*>(pthread_getspecific(eh_key));
-	if (0 == info)
-	{
-		info = static_cast<__cxa_thread_info*>(calloc(1, sizeof(__cxa_thread_info)));
-		pthread_setspecific(eh_key, info);
-	}
-	return info;
+	//}
+	if (fakeTLS || true ) { return &singleThreadInfo; }
+	//__cxa_thread_info *info = static_cast<__cxa_thread_info*>(pthread_getspecific(eh_key));
+	//if (0 == info)
+	//{
+		//info = static_cast<__cxa_thread_info*>(calloc(1, sizeof(__cxa_thread_info)));
+		//pthread_setspecific(eh_key, info);
+	//}
+	//return info;
 }
 /**
  * Fast version of thread_info().  May fail if thread_info() is not called on
@@ -408,8 +411,8 @@ static __cxa_thread_info *thread_info()
  */
 static __cxa_thread_info *thread_info_fast()
 {
-	if (fakeTLS) { return &singleThreadInfo; }
-	return static_cast<__cxa_thread_info*>(pthread_getspecific(eh_key));
+	if (fakeTLS || true) { return &singleThreadInfo; }
+	//return static_cast<__cxa_thread_info*>(pthread_getspecific(eh_key));
 }
 /**
  * ABI function returning the __cxa_eh_globals structure.
@@ -439,12 +442,12 @@ static bool buffer_allocated[16];
 /**
  * Lock used to protect emergency allocation.
  */
-static pthread_mutex_t emergency_malloc_lock = PTHREAD_MUTEX_INITIALIZER;
+//static pthread_mutex_t emergency_malloc_lock = PTHREAD_MUTEX_INITIALIZER;
 /**
  * Condition variable used to wait when two threads are both trying to use the
  * emergency malloc() buffer at once.
  */
-static pthread_cond_t emergency_malloc_wait = PTHREAD_COND_INITIALIZER;
+//static pthread_cond_t emergency_malloc_wait = PTHREAD_COND_INITIALIZER;
 
 /**
  * Allocates size bytes from the emergency allocation mechanism, if possible.
@@ -460,7 +463,7 @@ static char *emergency_malloc(size_t size)
 	// Only 4 emergency buffers allowed per thread!
 	if (info->emergencyBuffersHeld > 3) { return 0; }
 
-	pthread_mutex_lock(&emergency_malloc_lock);
+	//pthread_mutex_lock(&emergency_malloc_lock);
 	int buffer = -1;
 	while (buffer < 0)
 	{
@@ -468,10 +471,10 @@ static char *emergency_malloc(size_t size)
 		// enough memory for us to use, so try the allocation again - no point
 		// using the emergency buffer if there is some real memory that we can
 		// use...
-		void *m = calloc(1, size);
+		void *m = cxxruntime::calloc(1, size);
 		if (0 != m)
 		{
-			pthread_mutex_unlock(&emergency_malloc_lock);
+			//pthread_mutex_unlock(&emergency_malloc_lock);
 			return static_cast<char*>(m);
 		}
 		for (int i=0 ; i<16 ; i++)
@@ -488,10 +491,14 @@ static char *emergency_malloc(size_t size)
 		// of the emergency buffers.
 		if (buffer < 0)
 		{
-			pthread_cond_wait(&emergency_malloc_wait, &emergency_malloc_lock);
+			//pthread_cond_wait(&emergency_malloc_wait, &emergency_malloc_lock);
+			printf( "OH SHIT!" );
+			uprintf( "OH SHIT!" );
+			while( true );
+			panic( "OH SHIT!!!!!!!" );
 		}
 	}
-	pthread_mutex_unlock(&emergency_malloc_lock);
+	//pthread_mutex_unlock(&emergency_malloc_lock);
 	info->emergencyBuffersHeld++;
 	return emergency_buffer + (1024 * buffer);
 }
@@ -524,18 +531,18 @@ static void emergency_malloc_free(char *ptr)
 	memset(ptr, 0, 1024);
 	// Signal the condition variable to wake up any threads that are blocking
 	// waiting for some space in the emergency buffer
-	pthread_mutex_lock(&emergency_malloc_lock);
+//	pthread_mutex_lock(&emergency_malloc_lock);
 	// In theory, we don't need to do this with the lock held.  In practice,
 	// our array of bools will probably be updated using 32-bit or 64-bit
 	// memory operations, so this update may clobber adjacent values.
 	buffer_allocated[buffer] = false;
-	pthread_cond_signal(&emergency_malloc_wait);
-	pthread_mutex_unlock(&emergency_malloc_lock);
+//	pthread_cond_signal(&emergency_malloc_wait);
+//	pthread_mutex_unlock(&emergency_malloc_lock);
 }
 
 static char *alloc_or_die(size_t size)
 {
-	char *buffer = static_cast<char*>(calloc(1, size));
+	char *buffer = static_cast<char*>(cxxruntime::calloc(1, size));
 
 	// If calloc() doesn't want to give us any memory, try using an emergency
 	// buffer.
@@ -563,7 +570,7 @@ static void free_exception(char *e)
 	}
 	else
 	{
-		free(e);
+		cxxruntime::free(e);
 	}
 }
 
@@ -650,6 +657,7 @@ void __cxa_free_dependent_exception(void *thrown_exception)
  * Note: As of FreeBSD 8.1, dladd() still doesn't work properly, so this only
  * correctly prints function names from public, relocatable, symbols.
  */
+#if 0
 static _Unwind_Reason_Code trace(struct _Unwind_Context *context, void *c)
 {
 	Dl_info myinfo;
@@ -666,6 +674,7 @@ static _Unwind_Reason_Code trace(struct _Unwind_Context *context, void *c)
 	}
 	return _URC_CONTINUE_UNWIND;
 }
+#endif
 
 /**
  * Report a failure that occurred when attempting to throw an exception.
@@ -713,17 +722,17 @@ static void report_failure(_Unwind_Reason_Code err, __cxa_exception *thrown_exce
 			}
 
 			size_t bufferSize = 128;
-			char *demangled = static_cast<char*>(malloc(bufferSize));
+			char *demangled = static_cast<char*>(cxxruntime::malloc(bufferSize));
 			const char *mangled = thrown_exception->exceptionType->name();
 			int status;
 			demangled = __cxa_demangle(mangled, demangled, &bufferSize, &status);
 			fprintf(stderr, " of type %s\n", 
 				status == 0 ? demangled : mangled);
-			if (status == 0) { free(demangled); }
+			if (status == 0) { cxxruntime::free(demangled); }
 			// Print a back trace if no handler is found.
 			// TODO: Make this optional
 #ifndef __arm__
-			_Unwind_Backtrace(trace, 0);
+			//_Unwind_Backtrace(trace, 0);
 #endif
 
 			// Just abort. No need to call std::terminate for the second time
@@ -1435,7 +1444,7 @@ namespace std
 	 * Terminates the program, calling a custom terminate implementation if
 	 * required.
 	 */
-	void terminate()
+	void userland_terminate()
 	{
 		static __cxa_thread_info *info = thread_info();
 		if (0 != info && 0 != info->terminateHandler)
@@ -1498,6 +1507,7 @@ namespace std
 		return ATOMIC_LOAD(&terminateHandler);
 	}
 }
+#if 0
 #if defined(__arm__) && !defined(__ARM_DWARF_EH__)
 extern "C" _Unwind_Exception *__cxa_get_cleanup(void)
 {
@@ -1532,4 +1542,5 @@ asm (
 "	bl abort                             \n"
 ".popsection                             \n"
 );
+#endif
 #endif

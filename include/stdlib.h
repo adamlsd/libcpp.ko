@@ -18,6 +18,8 @@ namespace cxxruntime
 	extern void *malloc( std::size_t );
 	extern void *realloc(void *, std::size_t);
 	extern void free(void *);
+
+	extern void *calloc( std::size_t, std::size_t );
 }
 #define __extern_c extern "C"
 #else

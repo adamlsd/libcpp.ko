@@ -10,4 +10,9 @@ namespace cpp_runtime
 	{
 		panic( "Catch not implemented." );
 	}
+
+	void *catch_impl_end( void *e ) noexcept
+	{
+		panic( "Catch not implemented." );
+	}
 }

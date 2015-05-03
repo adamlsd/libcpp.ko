@@ -32,15 +32,26 @@ class TestingImpl : public Testing
 
 void
 libcpprt_entry()
+try
 {
 	uprintf( "Hello\n" );
-	if( 1 ) tester= new TestingImpl();
+	tester= new TestingImpl();
+
+	tester->core();
+}
+catch( ... )
+{
 }
 
 
 void
 libcpprt_close()
+try
 {
 	uprintf( "Goodbye\n" );
-	if( 1 ) delete tester;
+	tester->core();
+	delete tester;
+}
+catch( ... )
+{
 }

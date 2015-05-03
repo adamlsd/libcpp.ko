@@ -10,6 +10,10 @@ extern "C"
 extern "C" void *__cxa_begin_catch( void *e ) noexcept;
 
 #include <stdlib.h>
+namespace cxxruntime
+{
+	MALLOC_DECLARE( cxxruntime_pool );
+}
 
 namespace std
 {
@@ -19,16 +23,16 @@ namespace std
 }
 
 
-void *operator new( std::size_t s )
+void *operator new( const std::size_t s )
 {
-	std::terminate();
+	return malloc( s, cxxruntime::cxxruntime_pool, M_WAITOK );
 }
 
 
 
-void operator delete( void * )
+void operator delete( void *const p )
 {
-	std::terminate();
+	return free( p, cxxruntime::cxxruntime_pool );
 }
 
 
@@ -45,12 +49,18 @@ namespace std
 namespace cpp_runtime
 {
 	void *catch_impl( void *e ) noexcept;
+	void *catch_impl_end( void *e ) noexcept;
 }
 
 extern "C" void *
-__cxa_begin_catch( void *e ) noexcept
+disabled__cxa_begin_catch( void *e ) noexcept
 {
 	return cpp_runtime::catch_impl( e );
+}
+extern "C" void *
+disabled__cxa_end_catch( void *e ) noexcept
+{
+	return cpp_runtime::catch_impl_end( e );
 }
 
 //namespace __cxxabiv1
@@ -68,19 +78,25 @@ namespace cxxruntime
 	void *
 	malloc( std::size_t s )
 	{
-		return malloc( s, cxxruntime_pool, M_WAITOK );
+		return ::malloc( s, cxxruntime_pool, M_WAITOK );
 	}
 
 	void *
 	realloc( void *p, std::size_t s )
 	{
-		return realloc( p, s, cxxruntime_pool, M_WAITOK );
+		return ::realloc( p, s, cxxruntime_pool, M_WAITOK );
 	}
 
 	void
 	free( void *p )
 	{
-		return free( p, cxxruntime_pool );
+		return ::free( p, cxxruntime_pool );
+	}
+
+	void *
+	calloc( const std::size_t number, const std::size_t size )
+	{
+		return ::malloc( number * size, cxxruntime_pool, M_WAITOK | M_ZERO );
 	}
 }
 
@@ -114,6 +130,8 @@ abort()
 	panic( "C++ Runtime: abort" );
 }
 
+#if 0
+
  typedef enum
 {
 	_URC_OK = 0,                /* operation completed successfully */
@@ -125,6 +143,7 @@ abort()
 	_URC_FAILURE = 9,            /* unspecified failure of some kind */
 	_URC_FATAL_PHASE1_ERROR = _URC_FAILURE
 } _Unwind_Reason_Code;
+
 struct _Unwind_Exception;
 struct _Unwind_Context;
 typedef uint32_t _Unwind_State;
@@ -132,3 +151,4 @@ typedef uint32_t _Unwind_State;
 extern "C" _Unwind_Reason_Code __gxx_personality_v0(_Unwind_State state,
                          struct _Unwind_Exception *exceptionObject,
                          struct _Unwind_Context *context){abort();}
+#endif
